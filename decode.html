@@ -1,0 +1,33 @@
+<script src="qrdecoder.js"></script>
+<input type="file" multiple="multiple">
+<button>Convert to QR Code</button>
+<div class="qr-container"></div>
+<script>
+    const inp = document.querySelector('input');
+    const btn = document.querySelector('button');
+    const qrCont = document.querySelector('.qr-container');
+
+    const resObj = {};
+
+    const decodeQrCode = (img) => {
+        const qr = new QrcodeDecoder();
+        qr.decodeFromImage(img).then((res) => {
+            console.log(res);
+        });
+    }
+
+    const handleFiles = e => {
+        console.log('e.target.files', e.target.files);
+        Array.from(e.target.files).forEach(file => {
+
+            const reader = new FileReader();
+            reader.onloadend = function () {
+                decodeQrCode(reader.result)
+            }
+            reader.readAsDataURL(file);
+        })
+
+    }
+    inp.addEventListener('change', handleFiles);
+
+</script>

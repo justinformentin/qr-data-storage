@@ -1,0 +1,74 @@
+<script src="qrcode.min.js"></script>
+<input type="file">
+<button>Convert to QR Code</button>
+<div class="qr-container"></div>
+<script>
+    const inp = document.querySelector('input');
+    const btn = document.querySelector('button');
+    const qrCont = document.querySelector('.qr-container');
+    const byteArr = [];
+    const maxLen = 500;
+    const getBinarySize = str => new Blob([str]).size;
+    function chunkLeft(str, size) {
+        if (typeof str === 'string') {
+            const length = str.length
+            const chunks = Array(Math.ceil(length / size))
+            for (let i = 0, index = 0; index < length; i++) {
+                chunks[i] = str.slice(index, index += size)
+            }
+            return chunks
+        }
+    }
+    const getHeader = () => {
+        const arrLen = String(byteArr.length + 1)
+        const header = `{~{header:::${arrLen}}~}`;
+        return header;
+    }
+    const convertToBytes = (wholeB64) => {
+        console.log('wholeB64', wholeB64);
+        const size = getBinarySize(wholeB64);
+        console.log('size', size);
+        // const chunkNum = Math.ceil(size / maxLen);
+        // console.log('chunkNum',chunkNum)
+        const chunks = chunkLeft(wholeB64, maxLen);
+        console.log('chunks', chunks);
+        chunks.forEach(chunk => {
+            const header = getHeader();
+            console.log('header', header);
+            const withHeader = header.concat(chunk);
+            byteArr.push(withHeader);
+        })
+        console.log('byteArr', byteArr);
+    }
+
+    const handleFiles = e => {
+        console.log('e.target.files', e.target.files);
+        const reader = new FileReader();
+        reader.onloadend = function () {
+            // console.log('RESULT', reader.result);
+            convertToBytes(reader.result);
+        }
+        reader.readAsDataURL(e.target.files[0]);
+    }
+    inp.addEventListener('change', handleFiles);
+
+    const createQrCode = () => {
+        byteArr.forEach(str=> {
+
+        const qrcode = new QRCode(qrCont, {
+            text: 'test',
+            // width: 128,
+            // height: 128,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+
+        qrcode.makeCode(str);
+
+    })
+
+    }
+    btn.addEventListener('click', createQrCode);
+
+</script>
