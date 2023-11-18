@@ -1,17 +1,29 @@
 <script src="qrcode.min.js"></script>
+<script src="qrdecoder.js"></script>
 <script src="clientzip.js"></script>
 <script src="filesaver.min.js"></script>
-<input type="file">
-<button>Convert" to QR Code</button>
-<button class="download-button">Download</button>
-<div class="qr-container"></div>
+
+<div class="input-container">
+    <h2>Convert Image to QR Code</h2>
+    <input class="encoder-input" type="file">
+    <button class="encoder-button">Convert</button>
+    <button class="download-button">Download Zip</button>
+    <div class="qr-container"></div>
+</div>
+<div class="input-container">
+    <h2>Convert QR Codes to Image</h2>
+    <input class="decoder-input" type="file" multiple="multiple">
+    <button class="decoder-button">Convert to image</button>
+</div>
+
 <script>
-    const inp = document.querySelector('input');
-    const btn = document.querySelector('button');
+    const encoderInput = document.querySelector('.encoder-input');
+    const encoderButton = document.querySelector('.encoder-button');
     const downloadBtn = document.querySelector('.download-button');
     const qrCont = document.querySelector('.qr-container');
+
     const byteArr = [];
-    const maxLen = 800;
+    const maxLen = 300;
     const getBinarySize = str => new Blob([str]).size;
     function chunkLeft(str, size) {
         if (typeof str === 'string') {
@@ -23,42 +35,29 @@
             return chunks
         }
     }
-    const getHeader = () => {
-        const arrLen = String(byteArr.length + 1)
-        const header = `~~header~~${arrLen}~~header~~`;
-        return header;
-    }
+    const getHeader = () => `~~header~~${String(byteArr.length + 1)}~~header~~`;
+
     const convertToBytes = (wholeB64) => {
-        console.log('wholeB64', wholeB64);
         const size = getBinarySize(wholeB64);
-        console.log('size', size);
-        // const chunkNum = Math.ceil(size / maxLen);
-        // console.log('chunkNum',chunkNum)
         const chunks = chunkLeft(wholeB64, maxLen);
-        console.log('chunks', chunks);
-        chunks.forEach(chunk => {
-            const header = getHeader();
-            console.log('header', header);
+        chunks.forEach((chunk, idx) => {
+            const header = `~~header~~${idx}~~header~~`;
             const withHeader = header.concat(chunk);
             byteArr.push(withHeader);
         })
-        console.log('byteArr', byteArr);
     }
 
     const handleFiles = e => {
-        console.log('e.target.files', e.target.files);
         const reader = new FileReader();
         reader.onloadend = function () {
-            // console.log('RESULT', reader.result);
             convertToBytes(reader.result);
         }
         reader.readAsDataURL(e.target.files[0]);
     }
-    inp.addEventListener('change', handleFiles);
+    encoderInput.addEventListener('change', handleFiles);
 
     const createQrCode = () => {
         byteArr.forEach(str => {
-
             const qrcode = new QRCode(qrCont, {
                 text: 'test',
                 // width: 128,
@@ -67,25 +66,10 @@
                 colorLight: "#ffffff",
                 correctLevel: QRCode.CorrectLevel.H
             });
-
             qrcode.makeCode(str);
-
         })
-
-        // const qrImgs = qrCont.querySelectorAll('img');
-        // Array.from(qrImgs).forEach((el, idx) => {
-        // const img = document.querySelector('img');
-        // const idx = 0;
-        // console.log('img', img)
-        // const a = document.createElement('a');
-        // a.href = img.src;
-        // a.download = `code_${idx}.jpg`;
-        // document.body.appendChild(a);
-        // a.click();
-        // })
-
     }
-    btn.addEventListener('click', createQrCode);
+    encoderButton.addEventListener('click', createQrCode);
 
     function dataURLtoFile(dataurl, filename) {
         let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
@@ -102,19 +86,49 @@
         Array.from(qrImgs).forEach((el, idx) => {
             const file = dataURLtoFile(el.src, `code_${idx}.jpg`);
             files.push(file);
-            // if (idx === 0) {
-            //     console.log('el', el);
-            //     const idx = 0;
-            //     const a = document.createElement('a');
-            //     a.href = el.src;
-            //     a.download = `code_${idx}.jpg`;
-            //     document.body.appendChild(a);
-            //     a.click();
-            // }
-
         })
         const content = await downloadZip(files).blob()
         window.saveAs(content, "download.zip");
     }
     downloadBtn.addEventListener('click', downloadAll)
+</script>
+<script>
+    const decoderInput = document.querySelector('.decoder-input');
+    const decoderButton = document.querySelector('.decoder-button');
+
+    const resObj = {};
+
+    const decodeQrCode = (img) => {
+        console.log('img', img);
+        const qr = new QrcodeDecoder();
+        qr.decodeFromImage(img).then((res) => {
+            console.log('res', res);
+            const split = res.data.split('~~header~~');
+            const idx = split[1];
+            resObj[idx] = split[2];
+        });
+    }
+
+    const handleQrCodes = (e) => {
+        console.log('e.target.files', e.target.files);
+        Array.from(e.target.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onloadend = function () {
+                decodeQrCode(reader.result);
+            }
+            reader.readAsDataURL(file);
+        })
+    }
+    decoderInput.addEventListener('change', handleQrCodes);
+
+    const convertToImage = () => {
+        let str = '';
+        for(const key in resObj){
+            str += resObj[key];
+        }
+        const img = document.createElement('img');
+        img.src = str;
+        document.body.append(img)
+    }
+    decoderButton.addEventListener('click', convertToImage);
 </script>
