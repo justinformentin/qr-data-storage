@@ -1,6 +1,6 @@
 <script src="qrdecoder.js"></script>
 <input type="file" multiple="multiple">
-<button>Convert to QR Code</button>
+<button>Convert to image</button>
 <div class="qr-container"></div>
 <script>
     const inp = document.querySelector('input');
@@ -10,9 +10,13 @@
     const resObj = {};
 
     const decodeQrCode = (img) => {
+        console.log('img', img)
         const qr = new QrcodeDecoder();
         qr.decodeFromImage(img).then((res) => {
-            console.log(res);
+            console.log('res', res);
+            const split = res.data.split('~~header~~');
+            const idx = split[1];
+            resObj[idx] = split[2];
         });
     }
 
@@ -26,8 +30,19 @@
             }
             reader.readAsDataURL(file);
         })
-
+        console.log('resObj', resObj);
     }
     inp.addEventListener('change', handleFiles);
+
+    const convertToImage = () => {
+        let str = '';
+        for(const key in resObj){
+            str += resObj[key];
+        }
+        const img = document.createElement('img');
+        img.src = str;
+        document.body.append(img)
+    }
+    btn.addEventListener('click', convertToImage);
 
 </script>
