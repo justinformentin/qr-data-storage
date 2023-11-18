@@ -1,13 +1,17 @@
 <script src="qrcode.min.js"></script>
+<script src="clientzip.js"></script>
+<script src="filesaver.min.js"></script>
 <input type="file">
-<button>Convert to QR Code</button>
+<button>Convert" to QR Code</button>
+<button class="download-button">Download</button>
 <div class="qr-container"></div>
 <script>
     const inp = document.querySelector('input');
     const btn = document.querySelector('button');
+    const downloadBtn = document.querySelector('.download-button');
     const qrCont = document.querySelector('.qr-container');
     const byteArr = [];
-    const maxLen = 500;
+    const maxLen = 800;
     const getBinarySize = str => new Blob([str]).size;
     function chunkLeft(str, size) {
         if (typeof str === 'string') {
@@ -21,7 +25,7 @@
     }
     const getHeader = () => {
         const arrLen = String(byteArr.length + 1)
-        const header = `{~{header:::${arrLen}}~}`;
+        const header = `~~header~~${arrLen}~~header~~`;
         return header;
     }
     const convertToBytes = (wholeB64) => {
@@ -53,22 +57,64 @@
     inp.addEventListener('change', handleFiles);
 
     const createQrCode = () => {
-        byteArr.forEach(str=> {
+        byteArr.forEach(str => {
 
-        const qrcode = new QRCode(qrCont, {
-            text: 'test',
-            // width: 128,
-            // height: 128,
-            colorDark: "#000000",
-            colorLight: "#ffffff",
-            correctLevel: QRCode.CorrectLevel.H
-        });
+            const qrcode = new QRCode(qrCont, {
+                text: 'test',
+                // width: 128,
+                // height: 128,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
 
-        qrcode.makeCode(str);
+            qrcode.makeCode(str);
 
-    })
+        })
+
+        // const qrImgs = qrCont.querySelectorAll('img');
+        // Array.from(qrImgs).forEach((el, idx) => {
+        // const img = document.querySelector('img');
+        // const idx = 0;
+        // console.log('img', img)
+        // const a = document.createElement('a');
+        // a.href = img.src;
+        // a.download = `code_${idx}.jpg`;
+        // document.body.appendChild(a);
+        // a.click();
+        // })
 
     }
     btn.addEventListener('click', createQrCode);
 
+    function dataURLtoFile(dataurl, filename) {
+        let arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+        while (n--) {
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new File([u8arr], filename, { type: mime });
+    }
+
+    const downloadAll = async () => {
+        const qrImgs = qrCont.querySelectorAll('img');
+        const files = [];
+        Array.from(qrImgs).forEach((el, idx) => {
+            const file = dataURLtoFile(el.src, `code_${idx}.jpg`);
+            files.push(file);
+            // if (idx === 0) {
+            //     console.log('el', el);
+            //     const idx = 0;
+            //     const a = document.createElement('a');
+            //     a.href = el.src;
+            //     a.download = `code_${idx}.jpg`;
+            //     document.body.appendChild(a);
+            //     a.click();
+            // }
+
+        })
+        const content = await downloadZip(files).blob()
+        window.saveAs(content, "download.zip");
+    }
+    downloadBtn.addEventListener('click', downloadAll)
 </script>
